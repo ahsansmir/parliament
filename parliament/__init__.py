@@ -13,6 +13,7 @@ from importlib import resources
 import yaml
 
 # On initialization, load the IAM data
+# pkg_resources to. importlib
 iam_definition_path = resources.open_text(__name__, "iam_definition.json")
 iam_definition = json.load(iam_definition_path)
 
