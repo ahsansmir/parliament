@@ -15,7 +15,11 @@ BASE_DOCUMENTATION_URL = "https://docs.aws.amazon.com/service-authorization/late
 
 def get_links_from_base_actions_resources_conditions_page():
     """Gets the links from the actions, resources, and conditions keys page, and returns their filenames."""
-    html = requests.get(BASE_DOCUMENTATION_URL)
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+    }
+    html = requests.get(BASE_DOCUMENTATION_URL, headers=headers)
     soup = BeautifulSoup(html.content, "html.parser")
     html_filenames = []
     for i in soup.find("div", {"class": "highlights"}).findAll("a"):
@@ -37,8 +41,12 @@ def update_html_docs_directory(html_docs_destination):
     )
     # Remove the relative path so we can download it
     html_filenames = [sub.replace("./", "") for sub in initial_html_filenames_list]
-
+    pos = 0
+    
     for page in html_filenames:
+        pos += 1
+        print(f"Downloading {pos} of {len(html_filenames)} - {page}")
+
         response = requests.get(link_url_prefix + page, allow_redirects=False)
         # Replace the CSS stuff. Basically this:
         """
@@ -110,11 +118,12 @@ def header_matches(string, table):
 
 
 # Create the docs directory
-Path("docs").mkdir(parents=True, exist_ok=True)
+DOCS_DIR = "docs"
+print("Downloading html pages to:", DOCS_DIR)
+Path(DOCS_DIR).mkdir(parents=True, exist_ok=True)
+update_html_docs_directory(f"{DOCS_DIR}/")
 
-update_html_docs_directory("docs/")
-
-mypath = "./docs/"
+mypath = f"./{DOCS_DIR}/"
 schema = []
 
 # for filename in ['list_amazons3.html']:
@@ -316,4 +325,14 @@ for filename in [f for f in listdir(mypath) if isfile(join(mypath, f))]:
 
 
 schema.sort(key=lambda x: x["prefix"])
-print(json.dumps(schema, indent=2, sort_keys=True))
+
+print(f"--------------------")
+# write json to file
+iam_definition_file_path = "parliament/iam_definition.json"
+with open(
+    "parliament/iam_definition.json", "w", encoding="utf-8"
+) as iam_definition_file:
+    iam_definition_file.write(json.dumps(schema, indent=2, sort_keys=True))
+    iam_definition_file.close()
+
+print(f"Updated {iam_definition_file_path}")
